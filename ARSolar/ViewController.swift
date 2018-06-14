@@ -14,7 +14,7 @@ private let log = Log()
 
 class ViewController: UIViewController {
 
-    @IBOutlet var sceneView: ARSCNView!
+    @IBOutlet weak var sceneView: ARSCNView!
     
     var session: ARSession {
         return sceneView.session
@@ -28,23 +28,33 @@ class ViewController: UIViewController {
         return CGPoint(x: bounds.midX, y: bounds.midY)
     }
     
+    lazy var statusViewController: StatusViewController = {
+        return children.lazy.compactMap({ $0 as? StatusViewController }).first!
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Set the view's delegate
+        // Setup the sceneView
         sceneView.delegate = self
         session.delegate = self
         sceneView.showsStatistics = true
         
         setupCamera()
         sceneView.scene.rootNode.addChildNode(focusSquare)
+        
+        statusViewController.restartHandler = { [unowned self] in
+            self.restartSession()
+        }
+        
+        UIApplication.shared.isIdleTimerDisabled = true
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.horizontal]
+        configuration.planeDetection = [.horizontal, .vertical]
         
 
         sceneView.session.run(configuration)
@@ -57,15 +67,29 @@ class ViewController: UIViewController {
         sceneView.session.pause()
     }
     
+    // MARK: - Restart btn clicked handler
+    func restartSession() {
+        log.debug("Restart session button clicked")
+        statusViewController.cancelAllScheduledMessages()
+
+        resetTracking()
+    }
+    
+    func resetTracking() {
+        
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = [.horizontal, .vertical]
+        configuration.environmentTexturing = .automatic
+        session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
+        
+        statusViewController.schedulePlaceObjectMessage(inSeconds: 7.5, messageType: .planeEstimation)
+    }
+    
     func setupCamera() {
         guard let camera = sceneView.pointOfView?.camera else {
             fatalError("Expected a valid `pointOfView` from the scene.")
         }
         
-        /*
-         Enable HDR camera settings for the most realistic appearance
-         with environmental lighting and physically based materials.
-         */
         camera.wantsHDR = true
 //        camera.exposureOffset = -1
 //        camera.minimumExposure = -1
@@ -79,6 +103,7 @@ class ViewController: UIViewController {
             focusSquare.hide()
         } else {
             focusSquare.unhide()
+            statusViewController.scheduleMessage("TRY MOVING LEFT OR RIGHT", inSeconds: 5.0, messageType: .focusSquare)
         }
         // Perform hit testing only when ARKit tracking is in a good state.
         if let camera = session.currentFrame?.camera, case .normal = camera.trackingState,
@@ -87,6 +112,7 @@ class ViewController: UIViewController {
                 self.sceneView.scene.rootNode.addChildNode(self.focusSquare)
                 self.focusSquare.state = .detecting(hitTestResult: result, camera: camera)
             }
+            statusViewController.cancelScheduledMessage(for: .focusSquare)
         } else {
             updateQueue.async {
                 self.focusSquare.state = .initializing
