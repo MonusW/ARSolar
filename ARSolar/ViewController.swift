@@ -10,33 +10,43 @@ import UIKit
 import SceneKit
 import ARKit
 
-class ViewController: UIViewController, ARSCNViewDelegate {
+private let log = Log()
+
+class ViewController: UIViewController {
 
     @IBOutlet var sceneView: ARSCNView!
+    
+    var session: ARSession {
+        return sceneView.session
+    }
+    
+    var focusSquare = FocusSquare()
+    
+    let updateQueue = DispatchQueue(label: "serialSceneKitQueue")
+    var screenCenter: CGPoint {
+        let bounds = sceneView.bounds
+        return CGPoint(x: bounds.midX, y: bounds.midY)
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Set the view's delegate
         sceneView.delegate = self
-        
-        // Show statistics such as fps and timing information
+        session.delegate = self
         sceneView.showsStatistics = true
         
-        // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
-        
-        // Set the scene to the view
-        sceneView.scene = scene
+        setupCamera()
+        sceneView.scene.rootNode.addChildNode(focusSquare)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = [.horizontal]
+        
 
-        // Run the view's session
         sceneView.session.run(configuration)
     }
     
@@ -46,30 +56,109 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Pause the view's session
         sceneView.session.pause()
     }
+    
+    func setupCamera() {
+        guard let camera = sceneView.pointOfView?.camera else {
+            fatalError("Expected a valid `pointOfView` from the scene.")
+        }
+        
+        /*
+         Enable HDR camera settings for the most realistic appearance
+         with environmental lighting and physically based materials.
+         */
+        camera.wantsHDR = true
+//        camera.exposureOffset = -1
+//        camera.minimumExposure = -1
+//        camera.maximumExposure = 3
+    }
+    
+    // MARK: - Focus Square
+    
+    func updateFocusSquare(isObjectVisible: Bool) {
+        if isObjectVisible {
+            focusSquare.hide()
+        } else {
+            focusSquare.unhide()
+        }
+        // Perform hit testing only when ARKit tracking is in a good state.
+        if let camera = session.currentFrame?.camera, case .normal = camera.trackingState,
+            let result = self.sceneView.smartHitTest(screenCenter) {
+            updateQueue.async {
+                self.sceneView.scene.rootNode.addChildNode(self.focusSquare)
+                self.focusSquare.state = .detecting(hitTestResult: result, camera: camera)
+            }
+        } else {
+            updateQueue.async {
+                self.focusSquare.state = .initializing
+                self.sceneView.pointOfView?.addChildNode(self.focusSquare)
+            }
+        }
+    }
 
-    // MARK: - ARSCNViewDelegate
-    
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
-    }
-*/
-    
-    func session(_ session: ARSession, didFailWithError error: Error) {
-        // Present an error message to the user
+}
+
+extension ARSCNView {
+    func smartHitTest(_ point: CGPoint,
+                      infinitePlane: Bool = false,
+                      objectPosition: float3? = nil,
+                      allowedAlignments: [ARPlaneAnchor.Alignment] = [.horizontal, .vertical]) -> ARHitTestResult? {
         
-    }
-    
-    func sessionWasInterrupted(_ session: ARSession) {
-        // Inform the user that the session has been interrupted, for example, by presenting an overlay
+        // Perform the hit test.
+        let results = hitTest(point, types: [.existingPlaneUsingGeometry, .estimatedVerticalPlane, .estimatedHorizontalPlane])
         
-    }
-    
-    func sessionInterruptionEnded(_ session: ARSession) {
-        // Reset tracking and/or remove existing anchors if consistent tracking is required
+        // 1. Check for a result on an existing plane using geometry.
+        if let existingPlaneUsingGeometryResult = results.first(where: { $0.type == .existingPlaneUsingGeometry }),
+            let planeAnchor = existingPlaneUsingGeometryResult.anchor as? ARPlaneAnchor, allowedAlignments.contains(planeAnchor.alignment) {
+            return existingPlaneUsingGeometryResult
+        }
         
+        if infinitePlane {
+            
+            // 2. Check for a result on an existing plane, assuming its dimensions are infinite.
+            //    Loop through all hits against infinite existing planes and either return the
+            //    nearest one (vertical planes) or return the nearest one which is within 5 cm
+            //    of the object's position.
+            let infinitePlaneResults = hitTest(point, types: .existingPlane)
+            
+            for infinitePlaneResult in infinitePlaneResults {
+                if let planeAnchor = infinitePlaneResult.anchor as? ARPlaneAnchor, allowedAlignments.contains(planeAnchor.alignment) {
+                    if planeAnchor.alignment == .vertical {
+                        // Return the first vertical plane hit test result.
+                        return infinitePlaneResult
+                    } else {
+                        // For horizontal planes we only want to return a hit test result
+                        // if it is close to the current object's position.
+                        if let objectY = objectPosition?.y {
+                            let planeY = infinitePlaneResult.worldTransform.translation.y
+                            if objectY > planeY - 0.05 && objectY < planeY + 0.05 {
+                                return infinitePlaneResult
+                            }
+                        } else {
+                            return infinitePlaneResult
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 3. As a final fallback, check for a result on estimated planes.
+        let vResult = results.first(where: { $0.type == .estimatedVerticalPlane })
+        let hResult = results.first(where: { $0.type == .estimatedHorizontalPlane })
+        switch (allowedAlignments.contains(.horizontal), allowedAlignments.contains(.vertical)) {
+        case (true, false):
+            return hResult
+        case (false, true):
+            // Allow fallback to horizontal because we assume that objects meant for vertical placement
+            // (like a picture) can always be placed on a horizontal surface, too.
+            return vResult ?? hResult
+        case (true, true):
+            if hResult != nil && vResult != nil {
+                return hResult!.distance < vResult!.distance ? hResult! : vResult!
+            } else {
+                return hResult ?? vResult
+            }
+        default:
+            return nil
+        }
     }
 }
