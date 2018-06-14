@@ -56,7 +56,7 @@ class StatusViewController: UIViewController {
     
     func schedulePlaceObjectMessage(inSeconds seconds: TimeInterval, messageType: MessageType) {
         let msg = "FIND A SURFACE TO PLACE THE SOLAR"
-        self.scheduleMessage(msg, inSeconds: seconds, messageType: MessageType)
+        self.scheduleMessage(msg, inSeconds: seconds, messageType: messageType)
     }
     
     func showMessage(_ text: String, autoHide: Bool = true) {
