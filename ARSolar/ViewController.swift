@@ -15,7 +15,9 @@ private let log = Log()
 class ViewController: UIViewController {
 
     @IBOutlet weak var sceneView: ARSCNView!
+    @IBOutlet weak var spinner: UIActivityIndicatorView!
     
+    @IBOutlet weak var btnAdd: UIButton!
     var session: ARSession {
         return sceneView.session
     }
@@ -47,6 +49,8 @@ class ViewController: UIViewController {
             self.restartSession()
         }
         
+//        StarLoader.shared.loadAllStars(withMode: .physical)
+        
         UIApplication.shared.isIdleTimerDisabled = true
     }
     
@@ -55,32 +59,31 @@ class ViewController: UIViewController {
         
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal, .vertical]
-        
 
         sceneView.session.run(configuration)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        
-        // Pause the view's session
-        sceneView.session.pause()
+        session.pause()
     }
     
     // MARK: - Restart btn clicked handler
     func restartSession() {
-        log.debug("Restart session button clicked")
         statusViewController.cancelAllScheduledMessages()
-
         resetTracking()
     }
     
     func resetTracking() {
-        
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal, .vertical]
         configuration.environmentTexturing = .automatic
         session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
+        
+        for node in sceneView.scene.rootNode.childNodes {
+            node.removeFromParentNode()
+        }
+        sceneView.scene.rootNode.addChildNode(focusSquare)
         
         statusViewController.schedulePlaceObjectMessage(inSeconds: 7.5, messageType: .planeEstimation)
     }
@@ -91,10 +94,54 @@ class ViewController: UIViewController {
         }
         
         camera.wantsHDR = true
-//        camera.exposureOffset = -1
-//        camera.minimumExposure = -1
-//        camera.maximumExposure = 3
     }
+    
+    var i = 0
+    @IBAction func onBtnAddClick(_ sender: UIButton) {
+        guard let focusPosition = focusSquare.lastPosition,
+            focusSquare.state != .initializing else {
+                statusViewController.showMessage("CANNOT PLACE OBJECT\nTry moving left or right.")
+                return
+        }
+        
+        addSolar(solarPosition: focusPosition)
+    }
+    
+    func addSolar(solarPosition: float3) {
+        displayObjectLoadingUI()
+        DispatchQueue.global(qos: .background).async {
+            var nodes = [SCNNode]()
+            for i in 0..<StarLoader.shared.loadedStars.count {
+                let star = StarLoader.shared.loadedStars[i]
+                if i == 4 {
+                    continue
+                }
+                if i == 0 {
+                    star.simdPosition = solarPosition
+                } else {
+                    let angles = Physics.shared.getCurrentObitPos()
+                    let radian = angles[i]
+                    let orbitRadius = StarLoader.shared.orbitRadiusArray[i]
+                    star.simdPosition = self.getWorldPosOf(solarPos: solarPosition, radian: radian, orbitRadius: orbitRadius)
+                }
+                nodes.append(star)
+            }
+            DispatchQueue.main.async {
+                for node in nodes {
+                    self.sceneView.scene.rootNode.addChildNode(node)
+                }
+                self.hideObjectLoadingUI()
+            }
+        }
+    }
+    
+    func getWorldPosOf(solarPos: float3, radian: Double, orbitRadius: Double) -> float3 {
+        let x = orbitRadius * cos(radian)
+        let z = -orbitRadius * sin(radian)
+        let relativePos = float3(Float(x), 0, Float(z))
+        return relativePos + solarPos
+    }
+    
     
     // MARK: - Focus Square
     
@@ -119,6 +166,21 @@ class ViewController: UIViewController {
                 self.sceneView.pointOfView?.addChildNode(self.focusSquare)
             }
         }
+    }
+    
+    func displayObjectLoadingUI() {
+        spinner.startAnimating()
+        
+        btnAdd.setImage(UIImage(named: "buttonRing"), for: .normal)
+        btnAdd.isEnabled = false
+    }
+    
+    func hideObjectLoadingUI() {
+        spinner.stopAnimating()
+        
+        btnAdd.setImage(UIImage(named: "add"), for: .normal)
+        btnAdd.setImage(UIImage(named: "addPressed"), for: .highlighted)
+        btnAdd.isEnabled = true
     }
 
 }

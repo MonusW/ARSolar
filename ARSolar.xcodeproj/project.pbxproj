@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		943868C220D275BF00947EFC /* StatusViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943868C120D275BF00947EFC /* StatusViewController.swift */; };
+		943868C420D3666F00947EFC /* StarLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943868C320D3666F00947EFC /* StarLoader.swift */; };
+		943868C620D3994100947EFC /* Physics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943868C520D3994100947EFC /* Physics.swift */; };
 		948C445020D15ED20072A812 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948C444F20D15ED20072A812 /* AppDelegate.swift */; };
 		948C445220D15ED20072A812 /* art.scnassets in Resources */ = {isa = PBXBuildFile; fileRef = 948C445120D15ED20072A812 /* art.scnassets */; };
 		948C445420D15ED20072A812 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948C445320D15ED20072A812 /* ViewController.swift */; };
@@ -24,6 +26,8 @@
 
 /* Begin PBXFileReference section */
 		943868C120D275BF00947EFC /* StatusViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatusViewController.swift; sourceTree = "<group>"; };
+		943868C320D3666F00947EFC /* StarLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarLoader.swift; sourceTree = "<group>"; };
+		943868C520D3994100947EFC /* Physics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Physics.swift; sourceTree = "<group>"; };
 		948C444C20D15ED20072A812 /* ARSolar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ARSolar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		948C444F20D15ED20072A812 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		948C445120D15ED20072A812 /* art.scnassets */ = {isa = PBXFileReference; lastKnownFileType = wrapper.scnassets; path = art.scnassets; sourceTree = "<group>"; };
@@ -74,6 +78,8 @@
 				948C445320D15ED20072A812 /* ViewController.swift */,
 				948C446E20D181DA0072A812 /* ViewController+ARSCNViewDelegate.swift */,
 				943868C120D275BF00947EFC /* StatusViewController.swift */,
+				943868C320D3666F00947EFC /* StarLoader.swift */,
+				943868C520D3994100947EFC /* Physics.swift */,
 				948C446420D178240072A812 /* Focus Square */,
 				948C446B20D17FD40072A812 /* Utilities */,
 				948C446320D177850072A812 /* Resources */,
@@ -185,12 +191,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				943868C420D3666F00947EFC /* StarLoader.swift in Sources */,
 				943868C220D275BF00947EFC /* StatusViewController.swift in Sources */,
 				948C446F20D181DA0072A812 /* ViewController+ARSCNViewDelegate.swift in Sources */,
 				948C447120D206790072A812 /* Log.swift in Sources */,
 				948C445420D15ED20072A812 /* ViewController.swift in Sources */,
 				948C446820D178240072A812 /* FocusSquare.swift in Sources */,
 				948C446720D178240072A812 /* FocusSquareSegment.swift in Sources */,
+				943868C620D3994100947EFC /* Physics.swift in Sources */,
 				948C446D20D17FD40072A812 /* Utilities.swift in Sources */,
 				948C445020D15ED20072A812 /* AppDelegate.swift in Sources */,
 			);
