@@ -17,16 +17,20 @@ class Physics {
     let realRadius: [CGFloat] = [695500, 2440,  6051.9, 6378.1, 1738.14,
                                  3398,   71492, 60268,  25559,  24788]
 
-    let timeAnchor = "2000-01-01 00:00:00"
-    let timestampAnchor: TimeInterval = 946656000
+//    let timeAnchor = "2000-01-01 00:00:00"
+//    let timestampAnchor: TimeInterval = 946656000
+    let timeAnchor = "2018-06-01 00:00:00"
+    let timestampAnchor: TimeInterval = 1527782400
     
     // 2000/1/1 00:00:00 position angle of every planet  unit: anglular
     // From https://www.heavens-above.com
-    let orbitPosition = [0, 252.8, 182.3, 100.4, 100,
-                         0, 44.49, 46.3,  216.5, 303.9]
+//    let orbitPosition = [0, 252.8, 182.3, 100.4, 100,
+//                         0, 44.49, 46.3,  216.5, 303.9]
+    let orbitPosition = [0, 40.9, 157.7, 250.2, 128.5,
+                          270.4, 229.0, 274.5, 29.1, 344.4]
     
     // Period of revolution, unit: day
-    let orbitPeriod = [0, 87.7, 224.701, 365.2422, 27.32,
+    let orbitPeriod = [0, 87.7, 224.701, 365.0, 27.32,
                        686.98, 4328.9, 10799.2384, 30778.014, 60191.91456]
     
     // Rotation period,  unit: day

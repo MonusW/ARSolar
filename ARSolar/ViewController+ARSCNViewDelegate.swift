@@ -12,14 +12,6 @@ extension ViewController: ARSCNViewDelegate, ARSessionDelegate {
     
     // MARK: - ARSCNViewDelegate
     
-    /*
-     // Override to create and configure nodes for anchors added to the view's session.
-     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-     let node = SCNNode()
-     
-     return node
-     }
-     */
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
         DispatchQueue.main.async {
             self.updateFocusSquare(isObjectVisible: false)
@@ -37,8 +29,21 @@ extension ViewController: ARSCNViewDelegate, ARSessionDelegate {
     }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
-        // Present an error message to the user
+        guard error is ARError else { return }
         
+        let errorWithInfo = error as NSError
+        let messages = [
+            errorWithInfo.localizedDescription,
+            errorWithInfo.localizedFailureReason,
+            errorWithInfo.localizedRecoverySuggestion
+        ]
+        
+        // Use `flatMap(_:)` to remove optional error messages.
+        let errorMessage = messages.compactMap({ $0 }).joined(separator: "\n")
+        
+        DispatchQueue.main.async {
+            self.displayErrorMessage(title: "The AR session failed.", message: errorMessage)
+        }
     }
     
     func sessionWasInterrupted(_ session: ARSession) {
@@ -49,6 +54,10 @@ extension ViewController: ARSCNViewDelegate, ARSessionDelegate {
     func sessionInterruptionEnded(_ session: ARSession) {
         // Reset tracking and/or remove existing anchors if consistent tracking is required
         
+    }
+    
+    func sessionShouldAttemptRelocalization(_ session: ARSession) -> Bool {
+        return true
     }
     
 }
