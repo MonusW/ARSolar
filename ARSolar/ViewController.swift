@@ -69,7 +69,7 @@ class ViewController: UIViewController {
         
         sceneView.delegate = self
         session.delegate = self
-        sceneView.showsStatistics = true
+//        sceneView.showsStatistics = true
 //        sceneView.debugOptions = [ARSCNDebugOptions.showWorldOrigin]
         sceneView.scene.rootNode.addChildNode(focusSquare)
     }
@@ -166,9 +166,6 @@ class ViewController: UIViewController {
         updateSelfRotation()
         updateOrbitRotation()
     }
-    
-    
-    
     
     // MARK: - Focus Square
     
